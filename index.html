@@ -33,7 +33,6 @@
   </table>
 	</div>
 </script>
-
 <style type="text/css">
   .entry-form{
     padding:40px;
@@ -41,6 +40,7 @@
     border-radius:5px;
     background-color:#fcfdfd;
     margin:0 auto;
+    margin-top: 40px;
   }
 
   .entry-form .form-success{
@@ -49,7 +49,7 @@
 
   @media screen and (min-width: 740px){
     .entry-form{
-      width:65%;
+      width:50%;
     }
   }
 
@@ -84,7 +84,7 @@
 				</div>
 				<p>Add your resource by opening an issue <a href="https://github.com/brainhack101/neurolinks">here!</a></p>
 				</div>
-    		<div class="col-md-10" style="height:1em">
+    		<div class="col-md-10">
     		<demo-grid
       		:data="gridData"
       		:columns="gridColumns">
@@ -246,6 +246,95 @@
 	platforms = function(url, logo) {
 		return ("<img height='25px' src='" + logo + "' />").link(url)
 	};
+
+  //Create issue form handler
+  window.addEventListener("load", function() {
+    var category = document.getElementById('entry-category');
+    const hiddenForm = document.getElementById('tool-options');
+    const entryForm = document.getElementById('needs-validation');
+
+    category.addEventListener("change", function() {
+      var selectText = this.options[this.selectedIndex].text;
+
+      if (selectText === 'Tool') {
+        hiddenForm.classList.remove("hidden");
+      } else {
+        hiddenForm.classList.add("hidden");
+      }
+    }, false)
+
+    //Form event listener on Submit
+    entryForm.addEventListener("submit", function(event) {
+      const mainUrl = this.querySelector('#url').value;
+
+      if (!entryForm.checkValidity()) {
+        event.preventDefault();
+
+      } else {
+        event.preventDefault();
+
+        //Calls function that will handle GitHub API connection
+        httpConnect(this);
+        entryForm.classList.add("was-validated");
+      }
+
+    }, false)
+  }, false)
+
+  //Connects to GitHub API and posts the object with form values
+  function httpConnect(form) {
+    const entry = createIssueObj(form);
+    const httpRequest = new XMLHttpRequest();
+    const successMessage = document.querySelector('.form-success')
+
+    if (!httpRequest) {
+      return false;
+    }
+
+    httpRequest.onreadystatechange = createGitIssue;
+    httpRequest.open('POST', 'https://api.github.com/repos/brainhack101/neurolinks/issues?###'); //Replace '###' with GitHub Personal Token
+    httpRequest.setRequestHeader('Accept', 'application/vnd.github.v3.raw+json');
+    httpRequest.send(JSON.stringify(entry));
+
+    function createGitIssue() {
+      if (httpRequest.readyState === XMLHttpRequest.DONE) {
+        if (httpRequest.status === 201) {
+          form.reset();
+          successMessage.classList.remove("hidden");
+        } else {
+          alert('There was a problem sending the form.');
+        }
+      }
+    }
+  }
+
+  //Gets values from the form and creates an Object with them
+  function createIssueObj(form) {
+    var issueObj = {},
+      selectedCategory = form.querySelector('#entry-category'),
+      categoryText = selectedCategory.options[selectedCategory.selectedIndex].text,
+      entryName = form.querySelector('#entry-name'),
+      author = form.querySelector('#author'),
+      url = form.querySelector('#url'),
+      descriptor = form.querySelector('#descriptor'),
+      dockerContainer = form.querySelector('#docker-container'),
+      singContainer = form.querySelector('#sing-container');
+
+    issueObj.title = "New Entry" + ' - ' + entryName.value;
+    issueObj.body = "Category: " + categoryText + "\n" +
+      "Entry name: " + entryName.value + "\n" +
+      "Author: " + author.value + "\n" +
+      "URL: " + url.value;
+
+    if (categoryText === 'Tool') {
+      issueObj.body = issueObj.body + "\n" +
+        "Boutiques descriptor URL: " + descriptor.value + "\n" +
+        "Docker container URL: " + dockerContainer.value + "\n" +
+        "Singularity container URL: " + singContainer.value;
+    }
+
+    return issueObj;
+  }
 
 </script>
 	</div>
